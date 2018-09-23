@@ -59,6 +59,7 @@ public class DeptController {
     }
 
     @RequestMapping("dept/list")
+    @RequiresPermissions("dept:list")
     @ResponseBody
     public List<Dept> deptList(Dept dept) {
         try {

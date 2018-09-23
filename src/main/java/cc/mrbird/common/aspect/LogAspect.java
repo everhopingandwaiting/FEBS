@@ -1,6 +1,6 @@
 package cc.mrbird.common.aspect;
 
-import cc.mrbird.common.config.FebsProperies;
+import cc.mrbird.common.config.FebsProperties;
 import cc.mrbird.common.util.HttpContextUtils;
 import cc.mrbird.common.util.IPUtils;
 import cc.mrbird.system.domain.SysLog;
@@ -32,7 +32,7 @@ public class LogAspect {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private FebsProperies febsProperies;
+    private FebsProperties febsProperties;
 
     @Autowired
     private LogService logService;
@@ -59,7 +59,7 @@ public class LogAspect {
         // 设置IP地址
         String ip = IPUtils.getIpAddr(request);
         long time = System.currentTimeMillis() - beginTime;
-        if (febsProperies.isOpenAopLog()) {
+        if (febsProperties.isOpenAopLog()) {
             // 保存日志
             User user = (User) SecurityUtils.getSubject().getPrincipal();
             SysLog log = new SysLog();

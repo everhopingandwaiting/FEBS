@@ -97,6 +97,7 @@ public class MenuController extends BaseController {
     }
 
     @RequestMapping("menu/list")
+    @RequiresPermissions("menu:list")
     @ResponseBody
     public List<Menu> menuList(Menu menu) {
         try {

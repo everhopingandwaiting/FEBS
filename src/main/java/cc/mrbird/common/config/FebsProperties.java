@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConfigurationProperties(prefix = "febs")
-public class FebsProperies {
+public class FebsProperties {
 
     private ShiroProperties shiro = new ShiroProperties();
 

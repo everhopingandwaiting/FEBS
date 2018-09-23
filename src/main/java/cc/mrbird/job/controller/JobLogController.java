@@ -38,6 +38,7 @@ public class JobLogController extends BaseController {
 	}
 
 	@RequestMapping("jobLog/list")
+	@RequiresPermissions("job:list")
 	@ResponseBody
 	public Map<String, Object> jobLogList(QueryRequest request, JobLog log) {
 		PageHelper.startPage(request.getPageNum(), request.getPageSize());

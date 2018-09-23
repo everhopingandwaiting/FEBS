@@ -35,6 +35,7 @@ public class SessionController {
 
     @ResponseBody
     @RequestMapping("session/list")
+    @RequiresPermissions("session:list")
     public Map<String, Object> list() {
         List<UserOnline> list = sessionService.list();
         Map<String, Object> rspData = new HashMap<>();

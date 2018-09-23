@@ -1,9 +1,10 @@
 package cc.mrbird.system.controller;
 
 import cc.mrbird.common.annotation.Log;
-import cc.mrbird.common.config.FebsProperies;
+import cc.mrbird.common.config.FebsProperties;
 import cc.mrbird.common.controller.BaseController;
 import cc.mrbird.common.domain.ResponseBo;
+import cc.mrbird.common.service.RedisService;
 import cc.mrbird.common.util.MD5Utils;
 import cc.mrbird.common.util.vcode.Captcha;
 import cc.mrbird.common.util.vcode.GifCaptcha;
@@ -11,7 +12,6 @@ import cc.mrbird.system.domain.User;
 import cc.mrbird.system.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.*;
-import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 @Controller
 public class LoginController extends BaseController {
@@ -35,28 +34,33 @@ public class LoginController extends BaseController {
     private static final String CODE_KEY = "_code";
 
     @Autowired
-    private FebsProperies febsProperies;
+    private FebsProperties febsProperties;
 
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private RedisService redisService;
+
     @GetMapping("/login")
     public String login() {
+        super.getSession();
         return "login";
     }
 
     @PostMapping("/login")
     @ResponseBody
-    public ResponseBo login(String username, String password, String code, Boolean rememberMe) {
+    public ResponseBo login(String username, String password, String code, Boolean rememberMe, HttpServletRequest request) {
         if (!StringUtils.isNotBlank(code)) {
             return ResponseBo.warn("验证码不能为空！");
         }
-        Session session = super.getSession();
-        String sessionCode = (String) session.getAttribute(CODE_KEY);
-        session.removeAttribute(CODE_KEY);
-        if (!code.equalsIgnoreCase(sessionCode)) {
+        String codeKey = request.getRequestedSessionId() + CODE_KEY;
+        String codeInRedis = redisService.get(codeKey);
+
+        if (!StringUtils.equals(MD5Utils.encrypt(code.toLowerCase()), codeInRedis)) {
             return ResponseBo.warn("验证码错误！");
         }
+        redisService.del(codeKey);
         // 密码 MD5 加密
         password = MD5Utils.encrypt(username.toLowerCase(), password);
         UsernamePasswordToken token = new UsernamePasswordToken(username, password, rememberMe);
@@ -83,13 +87,14 @@ public class LoginController extends BaseController {
             response.setContentType("image/gif");
 
             Captcha captcha = new GifCaptcha(
-                    febsProperies.getValidateCode().getWidth(),
-                    febsProperies.getValidateCode().getHeight(),
-                    febsProperies.getValidateCode().getLength());
+                    febsProperties.getValidateCode().getWidth(),
+                    febsProperties.getValidateCode().getHeight(),
+                    febsProperties.getValidateCode().getLength());
             captcha.out(response.getOutputStream());
-            HttpSession session = request.getSession(true);
-            session.removeAttribute(CODE_KEY);
-            session.setAttribute(CODE_KEY, captcha.text().toLowerCase());
+            String sessionId = request.getRequestedSessionId();
+            if (StringUtils.isNotBlank(sessionId)) {
+                redisService.set(sessionId + CODE_KEY, MD5Utils.encrypt(captcha.text().toLowerCase()));
+            }
         } catch (Exception e) {
             log.error("图形验证码生成失败", e);
         }
